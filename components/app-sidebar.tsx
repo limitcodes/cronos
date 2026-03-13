@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronRightIcon, MessageSquareIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { ChevronRightIcon, MessageSquareIcon, MoreHorizontalIcon, PlugZapIcon, PlusIcon, Trash2Icon } from "lucide-react";
 
 interface Chat {
   id: string;
@@ -92,6 +92,17 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/apps" />} tooltip="Connected Apps">
+                <PlugZapIcon className="size-4" />
+                <span>Apps</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
         <Collapsible defaultOpen className="group/collapsible">
           <SidebarGroup>
             <SidebarGroupLabel render={<CollapsibleTrigger className="flex w-full items-center justify-between" />}>

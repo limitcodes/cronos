@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth";
+import { composio } from "@/lib/composio";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
 import {
   convertToModelMessages,
+  jsonSchema,
   stepCountIs,
   streamText,
   tool,
@@ -14,7 +16,6 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
-import { z } from "zod";
 
 const aigateway = createAiGateway({
   accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
@@ -23,6 +24,36 @@ const aigateway = createAiGateway({
 });
 
 const unified = createUnified();
+
+type RawTool = { type: string; function: { name: string; description?: string; parameters: Record<string, unknown> } };
+
+// Convert OpenAI-format meta-tools from Composio → Vercel AI SDK tool format
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function composioMetaToolsToVercel(
+  rawTools: RawTool[],
+  session: Awaited<ReturnType<typeof composio.create>>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Record<string, any> {
+  return Object.fromEntries(
+    rawTools
+      .filter((t) => t.function.name)
+      .map((t) => [
+        t.function.name,
+        tool({
+          description: t.function.description ?? t.function.name,
+          inputSchema: jsonSchema(t.function.parameters as Parameters<typeof jsonSchema>[0]),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          execute: async (args: any) => {
+            try {
+              return await session.execute(t.function.name, { arguments: args });
+            } catch (err) {
+              return { error: String(err) };
+            }
+          },
+        }),
+      ])
+  );
+}
 
 export async function POST(
   req: NextRequest,
@@ -52,7 +83,6 @@ export async function POST(
       .values({ id: lastMessage.id ?? nanoid(), chatId, role: "user", content: text })
       .onConflictDoNothing();
 
-    // Auto-title from first user message
     if (messages.filter((m) => m.role === "user").length === 1 && text) {
       await db
         .update(chat)
@@ -61,22 +91,16 @@ export async function POST(
     }
   }
 
+  // Build Composio meta-tools for this user
+  const composioSession = await composio.create(session.user.id);
+  const rawComposioTools = await composioSession.tools() as RawTool[];
+  const composioTools = composioMetaToolsToVercel(rawComposioTools, composioSession);
+
   const result = streamText({
     model: aigateway(unified("google-vertex-ai/zai-org/glm-5-maas")),
     messages: await convertToModelMessages(messages),
     stopWhen: stepCountIs(50),
-    tools: {
-      weather: tool({
-        description: "Get the weather in a location (fahrenheit)",
-        inputSchema: z.object({
-          location: z.string().describe("The location to get the weather for"),
-        }),
-        execute: async ({ location }) => ({
-          location,
-          temperature: Math.round(Math.random() * (90 - 32) + 32),
-        }),
-      }),
-    },
+    tools: composioTools,
     onFinish: async ({ response }) => {
       for (const msg of response.messages.filter((m) => m.role === "assistant")) {
         const content = msg.content;
