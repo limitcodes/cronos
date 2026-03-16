@@ -73,11 +73,10 @@ export default function ChatPage({
   };
 
   return (
-    <div className="flex h-screen flex-col items-center">
-      <div className="flex w-full max-w-4xl flex-1 flex-col overflow-hidden">
-        <Conversation className="flex-1">
-          <ConversationContent>
-            {messages.map((message) => (
+    <div className="flex h-screen flex-col">
+      <Conversation className="flex-1">
+        <ConversationContent className="mx-auto w-full max-w-4xl">
+          {messages.map((message) => (
               <Fragment key={message.id}>
                 <Message from={message.role}>
                   <MessageContent
@@ -111,7 +110,6 @@ export default function ChatPage({
             </PromptInput>
           </div>
         </div>
-      </div>
     </div>
   );
 }

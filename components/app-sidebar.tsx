@@ -56,16 +56,8 @@ export function AppSidebar() {
 
   useEffect(() => { loadChats(); }, [activeChatId]);
 
-  const handleNewChat = async () => {
-    const res = await fetch("/api/chats", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    if (res.ok) {
-      await loadChats();
-      router.push("/");
-    }
+  const handleNewChat = () => {
+    router.push("/");
   };
 
   const handleDelete = async (chatId: string) => {
