@@ -34,14 +34,38 @@ export default function AppsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchApps(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadApps = async () => {
+      const res = await fetch("/api/apps");
+      if (!res.ok) {
+        if (!cancelled) {
+          setLoading(false);
+        }
+        return;
+      }
+
+      const nextApps = (await res.json()) as Toolkit[];
+      if (!cancelled) {
+        setApps(nextApps);
+        setLoading(false);
+      }
+    };
+
+    void loadApps();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleConnect = async (slug: string) => {
     setPending(slug);
     const res = await fetch(`/api/apps/${slug}`, { method: "POST" });
     if (res.ok) {
       const { redirectUrl } = await res.json();
-      window.location.href = redirectUrl;
+      window.location.assign(redirectUrl);
     } else {
       setPending(null);
     }

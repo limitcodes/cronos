@@ -44,17 +44,27 @@ export function AppSidebar() {
   const activeChatId = params?.chatId as string | undefined;
 
   const [chats, setChats] = useState<Chat[]>([]);
-  const [mounted, setMounted] = useState(false);
   const { data: session } = authClient.useSession();
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    let cancelled = false;
 
-  const loadChats = async () => {
-    const res = await fetch("/api/chats");
-    if (res.ok) setChats(await res.json());
-  };
+    const loadChats = async () => {
+      const res = await fetch("/api/chats");
+      if (!res.ok || cancelled) return;
 
-  useEffect(() => { loadChats(); }, [activeChatId]);
+      const nextChats = (await res.json()) as Chat[];
+      if (!cancelled) {
+        setChats(nextChats);
+      }
+    };
+
+    void loadChats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChatId]);
 
   const handleNewChat = () => {
     router.push("/");
@@ -142,27 +152,25 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4" suppressHydrationWarning>
-        {mounted && (
-          <div className="flex items-center gap-3">
-            <Avatar className="size-8">
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate text-sm font-medium">{session?.user?.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{session?.user?.email}</span>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="ml-auto shrink-0 text-xs"
-              onClick={() =>
-                authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/login") } })
-              }
-            >
-              Sign out
-            </Button>
+        <div className="flex items-center gap-3">
+          <Avatar className="size-8">
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-medium">{session?.user?.name}</span>
+            <span className="truncate text-xs text-muted-foreground">{session?.user?.email}</span>
           </div>
-        )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto shrink-0 text-xs"
+            onClick={() =>
+              authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/login") } })
+            }
+          >
+            Sign out
+          </Button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

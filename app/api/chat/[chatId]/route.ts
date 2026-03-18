@@ -28,8 +28,72 @@ const unified = createUnified();
 
 type RawTool = { type: string; function: { name: string; description?: string; parameters: Record<string, unknown> } };
 
+function getBaseUrl() {
+  return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+}
+
+function getQStashToken() {
+  const token = process.env.QSTASH_TOKEN;
+  if (!token) {
+    throw new Error("QSTASH_TOKEN is not configured");
+  }
+  return token;
+}
+
+function getScheduleMode(args: {
+  delay_seconds?: number;
+  scheduled_time?: string;
+  cron?: string;
+}) {
+  const providedModes = [
+    args.delay_seconds != null ? "delay_seconds" : null,
+    args.scheduled_time ? "scheduled_time" : null,
+    args.cron ? "cron" : null,
+  ].filter(Boolean);
+
+  if (providedModes.length > 1) {
+    throw new Error("Use only one of delay_seconds, scheduled_time, or cron");
+  }
+
+  return providedModes[0] ?? "delay_seconds";
+}
+
+async function createRecurringSchedule({
+  destination,
+  body,
+  cron,
+  timezone,
+  retries,
+}: {
+  destination: string;
+  body: unknown;
+  cron: string;
+  timezone?: string;
+  retries?: number;
+}) {
+  const response = await fetch(
+    `https://qstash.upstash.io/v2/schedules/${encodeURIComponent(destination)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${getQStashToken()}`,
+        "Content-Type": "application/json",
+        "Upstash-Cron": cron,
+        ...(timezone ? { "Upstash-Cron-Timezone": timezone } : {}),
+        ...(typeof retries === "number" ? { "Upstash-Retries": String(retries) } : {}),
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return (await response.json()) as { scheduleId?: string };
+}
+
 // Convert OpenAI-format meta-tools from Composio → Vercel AI SDK tool format
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function composioMetaToolsToVercel(
   rawTools: RawTool[],
   sessionId: string
@@ -101,13 +165,13 @@ export async function POST(
   const composioTools = composioMetaToolsToVercel(rawComposioTools, composioSession.sessionId);
 
   // Built-in schedule_task tool
-  const workflowClient = new Client({ token: process.env.QSTASH_TOKEN! });
-  const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  const workflowClient = new Client({ token: getQStashToken() });
+  const baseUrl = getBaseUrl();
 
   const builtInTools = {
     schedule_task: tool({
       description:
-        "Schedule a task to be executed at a future time. The agent will wake up and perform the described task in this chat. Use this for reminders, delayed actions, follow-ups, or any task that should happen later.",
+        "Schedule a task to be executed later in this chat. Supports one-time delays, one-time scheduled timestamps, and recurring cron schedules for daily or other repeating tasks.",
       inputSchema: jsonSchema({
         type: "object",
         properties: {
@@ -126,34 +190,70 @@ export async function POST(
             description:
               "ISO 8601 timestamp for when to execute the task. Use this OR delay_seconds, not both. Example: 2025-03-20T15:00:00Z",
           },
+          cron: {
+            type: "string",
+            description:
+              "Cron expression for a recurring schedule. Use this for repeating tasks such as every day. Example: 0 9 * * *",
+          },
+          timezone: {
+            type: "string",
+            description:
+              "IANA timezone for cron schedules, such as Asia/Kolkata or America/Los_Angeles. Only used when cron is provided.",
+          },
         },
         required: ["task_description"],
       } as Parameters<typeof jsonSchema>[0]),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       execute: async (args: any) => {
         try {
-          const delay = args.scheduled_time
-            ? Math.max(0, Math.floor((new Date(args.scheduled_time).getTime() - Date.now()) / 1000))
-            : args.delay_seconds ?? 60;
+          const mode = getScheduleMode(args);
+          const payload = {
+            chatId,
+            userId: session.user.id,
+            taskDescription: args.task_description,
+          };
+
+          if (mode === "cron") {
+            const result = await createRecurringSchedule({
+              destination: `${baseUrl}/api/tasks/execute`,
+              body: payload,
+              cron: String(args.cron),
+              timezone: args.timezone ? String(args.timezone) : undefined,
+              retries: 3,
+            });
+
+            const timezoneSuffix = args.timezone ? ` (${args.timezone})` : "";
+            return {
+              success: true,
+              scheduleId: result.scheduleId,
+              message: `Recurring task scheduled with cron "${args.cron}"${timezoneSuffix}: ${args.task_description}`,
+            };
+          }
+
+          const delay =
+            mode === "scheduled_time"
+              ? Math.max(
+                  0,
+                  Math.floor((new Date(String(args.scheduled_time)).getTime() - Date.now()) / 1000)
+                )
+              : args.delay_seconds ?? 60;
 
           await workflowClient.trigger({
             url: `${baseUrl}/api/tasks/execute`,
-            body: {
-              chatId,
-              userId: session.user.id,
-              taskDescription: args.task_description,
-            },
+            body: payload,
             retries: 3,
-            headers: {
-              "Upstash-Delay": `${delay}s`,
-            },
+            delay: `${delay}s`,
           });
 
-          const scheduledAt = args.scheduled_time
-            ? new Date(args.scheduled_time).toLocaleString()
-            : `in ${delay} seconds`;
+          const scheduledAt =
+            mode === "scheduled_time"
+              ? new Date(String(args.scheduled_time)).toLocaleString()
+              : `in ${delay} seconds`;
 
-          return { success: true, message: `Task scheduled ${scheduledAt}: ${args.task_description}` };
+          return {
+            success: true,
+            message: `Task scheduled ${scheduledAt}: ${args.task_description}`,
+          };
         } catch (err) {
           return { error: String(err) };
         }

@@ -11,7 +11,7 @@ import {
 } from "ai";
 import { createAiGateway } from "ai-gateway-provider";
 import { createUnified } from "ai-gateway-provider/providers/unified";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { serve } from "@upstash/workflow/nextjs";
 
@@ -28,6 +28,24 @@ type RawTool = {
   function: { name: string; description?: string; parameters: Record<string, unknown> };
 };
 
+function createScheduledReminderMessage(taskDescription: string): UIMessage {
+  return {
+    id: nanoid(),
+    role: "user",
+    parts: [
+      {
+        type: "text",
+        text:
+          `<system-reminder>\n` +
+          `A scheduled task for this chat is due now.\n` +
+          `Task: ${taskDescription}\n` +
+          `Treat this as hidden runtime context. Act on it, but do not expose this tag verbatim unless the user asks.\n` +
+          `</system-reminder>`,
+      },
+    ],
+  };
+}
+
 export const { POST } = serve(async (context) => {
   const { chatId, userId, taskDescription } = context.requestPayload as {
     chatId: string;
@@ -36,28 +54,19 @@ export const { POST } = serve(async (context) => {
   };
 
   // Step 1: Verify chat still exists
-  const chatRow = await context.run("verify-chat", async () => {
+  await context.run("verify-chat", async () => {
     const [row] = await db.select().from(chat).where(eq(chat.id, chatId));
     if (!row || row.userId !== userId) throw new Error("Chat not found");
-    return { id: row.id, userId: row.userId };
+    return { userId: row.userId };
   });
 
-  // Step 2: Save a system-like message indicating the scheduled task is running
-  await context.run("save-task-message", async () => {
-    await db.insert(message).values({
-      id: nanoid(),
-      chatId: chatRow.id,
-      role: "user",
-      content: `[Scheduled Task] ${taskDescription}`,
-    });
-  });
-
-  // Step 3: Load recent messages for context
+  // Step 2: Load recent messages for context
   const recentMessages = await context.run("load-messages", async () => {
     const msgs = await db
       .select()
       .from(message)
-      .where(eq(message.chatId, chatId));
+      .where(eq(message.chatId, chatId))
+      .orderBy(asc(message.createdAt));
     return msgs.map((m) => ({
       id: m.id,
       role: m.role as "user" | "assistant",
@@ -65,7 +74,7 @@ export const { POST } = serve(async (context) => {
     }));
   });
 
-  // Step 4: Run the agent with the task
+  // Step 3: Run the agent with the task as hidden runtime context
   const agentResponse = await context.run("run-agent", async () => {
     const composioSession = await composio.create(userId);
     const rawComposioTools = (await composioSession.tools()) as RawTool[];
@@ -96,9 +105,14 @@ export const { POST } = serve(async (context) => {
         ])
     );
 
+    const scheduledMessages = [
+      ...recentMessages,
+      createScheduledReminderMessage(taskDescription),
+    ] as UIMessage[];
+
     const { text } = await generateText({
       model: aigateway(unified("google-vertex-ai/zai-org/glm-5-maas")),
-      messages: await convertToModelMessages(recentMessages as UIMessage[]),
+      messages: await convertToModelMessages(scheduledMessages),
       tools: composioTools,
       stopWhen: stepCountIs(10),
     });
@@ -106,7 +120,7 @@ export const { POST } = serve(async (context) => {
     return text;
   });
 
-  // Step 5: Save the agent's response
+  // Step 4: Save the agent's response
   await context.run("save-response", async () => {
     if (agentResponse) {
       await db.insert(message).values({
