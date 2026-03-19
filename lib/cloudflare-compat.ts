@@ -16,5 +16,7 @@ export const cloudflareCompat = createOpenAICompatible({
   baseURL: `https://gateway.ai.cloudflare.com/v1/${getRequiredEnv("CLOUDFLARE_ACCOUNT_ID")}/${getRequiredEnv("CLOUDFLARE_GATEWAY_ID")}/compat`,
   headers: {
     "cf-aig-authorization": `Bearer ${getRequiredEnv("CLOUDFLARE_API_TOKEN")}`,
+    "cf-aig-custom-cost":
+      '{"per_token_in":0.0000003,"per_token_out":0.0000012}',
   },
 });
