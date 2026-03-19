@@ -1,3 +1,7 @@
+import {
+  CLOUDFLARE_COMPAT_MODEL,
+  cloudflareCompat,
+} from "@/lib/cloudflare-compat";
 import { composio } from "@/lib/composio";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
@@ -9,23 +13,17 @@ import {
   tool,
   UIMessage,
 } from "ai";
-import { createAiGateway } from "ai-gateway-provider";
-import { createUnified } from "ai-gateway-provider/providers/unified";
 import { asc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { serve } from "@upstash/workflow/nextjs";
 
-const aigateway = createAiGateway({
-  accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
-  gateway: process.env.CLOUDFLARE_GATEWAY_ID!,
-  apiKey: process.env.CLOUDFLARE_API_TOKEN!,
-});
-
-const unified = createUnified();
-
 type RawTool = {
   type: string;
-  function: { name: string; description?: string; parameters: Record<string, unknown> };
+  function: {
+    name: string;
+    description?: string;
+    parameters: Record<string, unknown>;
+  };
 };
 
 function createScheduledReminderMessage(taskDescription: string): UIMessage {
@@ -88,7 +86,7 @@ export const { POST } = serve(async (context) => {
           tool({
             description: t.function.description ?? t.function.name,
             inputSchema: jsonSchema(
-              t.function.parameters as Parameters<typeof jsonSchema>[0]
+              t.function.parameters as Parameters<typeof jsonSchema>[0],
             ),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             execute: async (args: any) => {
@@ -102,7 +100,7 @@ export const { POST } = serve(async (context) => {
               }
             },
           }),
-        ])
+        ]),
     );
 
     const scheduledMessages = [
@@ -111,7 +109,7 @@ export const { POST } = serve(async (context) => {
     ] as UIMessage[];
 
     const { text } = await generateText({
-      model: aigateway(unified("google-vertex-ai/zai-org/glm-5-maas")),
+      model: cloudflareCompat(CLOUDFLARE_COMPAT_MODEL),
       messages: await convertToModelMessages(scheduledMessages),
       tools: composioTools,
       stopWhen: stepCountIs(10),
@@ -130,6 +128,9 @@ export const { POST } = serve(async (context) => {
         content: agentResponse,
       });
     }
-    await db.update(chat).set({ updatedAt: new Date() }).where(eq(chat.id, chatId));
+    await db
+      .update(chat)
+      .set({ updatedAt: new Date() })
+      .where(eq(chat.id, chatId));
   });
 });

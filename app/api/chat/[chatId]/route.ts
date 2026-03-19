@@ -1,4 +1,8 @@
 import { auth } from "@/lib/auth";
+import {
+  CLOUDFLARE_COMPAT_MODEL,
+  cloudflareCompat,
+} from "@/lib/cloudflare-compat";
 import { composio } from "@/lib/composio";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
@@ -11,22 +15,19 @@ import {
   UIMessage,
 } from "ai";
 import { Client } from "@upstash/workflow";
-import { createAiGateway } from "ai-gateway-provider";
-import { createUnified } from "ai-gateway-provider/providers/unified";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 
-const aigateway = createAiGateway({
-  accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
-  gateway: process.env.CLOUDFLARE_GATEWAY_ID!,
-  apiKey: process.env.CLOUDFLARE_API_TOKEN!,
-});
-
-const unified = createUnified();
-
-type RawTool = { type: string; function: { name: string; description?: string; parameters: Record<string, unknown> } };
+type RawTool = {
+  type: string;
+  function: {
+    name: string;
+    description?: string;
+    parameters: Record<string, unknown>;
+  };
+};
 
 function getBaseUrl() {
   return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
@@ -80,10 +81,12 @@ async function createRecurringSchedule({
         "Content-Type": "application/json",
         "Upstash-Cron": cron,
         ...(timezone ? { "Upstash-Cron-Timezone": timezone } : {}),
-        ...(typeof retries === "number" ? { "Upstash-Retries": String(retries) } : {}),
+        ...(typeof retries === "number"
+          ? { "Upstash-Retries": String(retries) }
+          : {}),
       },
       body: JSON.stringify(body),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -96,8 +99,8 @@ async function createRecurringSchedule({
 // Convert OpenAI-format meta-tools from Composio → Vercel AI SDK tool format
 function composioMetaToolsToVercel(
   rawTools: RawTool[],
-  sessionId: string
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sessionId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any> {
   return Object.fromEntries(
     rawTools
@@ -106,7 +109,9 @@ function composioMetaToolsToVercel(
         t.function.name,
         tool({
           description: t.function.description ?? t.function.name,
-          inputSchema: jsonSchema(t.function.parameters as Parameters<typeof jsonSchema>[0]),
+          inputSchema: jsonSchema(
+            t.function.parameters as Parameters<typeof jsonSchema>[0],
+          ),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           execute: async (args: any) => {
             try {
@@ -119,13 +124,13 @@ function composioMetaToolsToVercel(
             }
           },
         }),
-      ])
+      ]),
   );
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
+  { params }: { params: Promise<{ chatId: string }> },
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
@@ -148,7 +153,12 @@ export async function POST(
 
     await db
       .insert(message)
-      .values({ id: lastMessage.id ?? nanoid(), chatId, role: "user", content: text })
+      .values({
+        id: lastMessage.id ?? nanoid(),
+        chatId,
+        role: "user",
+        content: text,
+      })
       .onConflictDoNothing();
 
     if (messages.filter((m) => m.role === "user").length === 1 && text) {
@@ -161,8 +171,11 @@ export async function POST(
 
   // Build Composio meta-tools for this user
   const composioSession = await composio.create(session.user.id);
-  const rawComposioTools = await composioSession.tools() as RawTool[];
-  const composioTools = composioMetaToolsToVercel(rawComposioTools, composioSession.sessionId);
+  const rawComposioTools = (await composioSession.tools()) as RawTool[];
+  const composioTools = composioMetaToolsToVercel(
+    rawComposioTools,
+    composioSession.sessionId,
+  );
 
   // Built-in schedule_task tool
   const workflowClient = new Client({ token: getQStashToken() });
@@ -234,9 +247,13 @@ export async function POST(
             mode === "scheduled_time"
               ? Math.max(
                   0,
-                  Math.floor((new Date(String(args.scheduled_time)).getTime() - Date.now()) / 1000)
+                  Math.floor(
+                    (new Date(String(args.scheduled_time)).getTime() -
+                      Date.now()) /
+                      1000,
+                  ),
                 )
-              : args.delay_seconds ?? 60;
+              : (args.delay_seconds ?? 60);
 
           await workflowClient.trigger({
             url: `${baseUrl}/api/tasks/execute`,
@@ -262,25 +279,34 @@ export async function POST(
   };
 
   const result = streamText({
-    model: aigateway(unified("google-vertex-ai/zai-org/glm-5-maas")),
+    model: cloudflareCompat(CLOUDFLARE_COMPAT_MODEL),
     messages: await convertToModelMessages(messages),
     stopWhen: stepCountIs(50),
     tools: { ...composioTools, ...builtInTools },
     onFinish: async ({ response }) => {
-      for (const msg of response.messages.filter((m) => m.role === "assistant")) {
+      for (const msg of response.messages.filter(
+        (m) => m.role === "assistant",
+      )) {
         const content = msg.content;
         const text = Array.isArray(content)
           ? content
-              .filter((p): p is { type: "text"; text: string } => p.type === "text")
+              .filter(
+                (p): p is { type: "text"; text: string } => p.type === "text",
+              )
               .map((p) => p.text)
               .join("")
           : String(content);
 
         if (text) {
-          await db.insert(message).values({ id: nanoid(), chatId, role: "assistant", content: text });
+          await db
+            .insert(message)
+            .values({ id: nanoid(), chatId, role: "assistant", content: text });
         }
       }
-      await db.update(chat).set({ updatedAt: new Date() }).where(eq(chat.id, chatId));
+      await db
+        .update(chat)
+        .set({ updatedAt: new Date() })
+        .where(eq(chat.id, chatId));
     },
   });
 
