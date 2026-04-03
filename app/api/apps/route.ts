@@ -10,7 +10,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const composioSession = await composio.create(session.user.id);
-  const { items } = await composioSession.toolkits({ limit: 100 });
+  const { items } = await composioSession.toolkits({ limit: 50 });
 
   const apps = items.filter((t) => FEATURED_APPS.includes(t.slug));
   return NextResponse.json(apps);
