@@ -1,6 +1,10 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useState } from "react";
+import {
+  useInfiniteQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +28,11 @@ interface Toolkit {
 
 type FilterMode = "all" | "connected";
 
+type AppsResponse = {
+  items: Toolkit[];
+  nextCursor?: string | null;
+};
+
 const DESCRIPTIONS: Record<string, string> = {
   gmail: "Read, compose, and send emails directly from your conversations.",
   github: "Manage repos, issues, pull requests, and code reviews.",
@@ -39,109 +48,59 @@ function getDescription(app: Toolkit) {
   return "Connect this app to let the assistant act with your account.";
 }
 
+async function fetchAppsPage({
+  cursor,
+  filter,
+  search,
+}: {
+  cursor?: string | null;
+  filter: FilterMode;
+  search: string;
+}) {
+  const params = new URLSearchParams();
+  if (cursor) params.set("cursor", cursor);
+  if (filter === "connected") params.set("filter", "connected");
+  if (search) params.set("search", search);
+
+  const url = params.size ? `/api/apps?${params.toString()}` : "/api/apps";
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Failed to load apps");
+  }
+
+  return (await response.json()) as AppsResponse;
+}
+
 export default function AppsPage() {
-  const [apps, setApps] = useState<Toolkit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [cursor, setCursor] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterMode>("all");
   const deferredSearch = useDeferredValue(search);
+  const queryClient = useQueryClient();
+  const trimmedSearch = deferredSearch.trim();
+  const appsQuery = useInfiniteQuery({
+    queryKey: ["apps", { filter, search: trimmedSearch }],
+    queryFn: ({ pageParam }) =>
+      fetchAppsPage({
+        cursor: pageParam,
+        filter,
+        search: trimmedSearch,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
 
-  const fetchApps = async ({
-    append = false,
-    cursor: pageCursor,
-    filterMode,
-    searchTerm,
-  }: {
-    append?: boolean;
-    cursor?: string | null;
-    filterMode?: FilterMode;
-    searchTerm?: string;
-  } = {}) => {
-    const params = new URLSearchParams();
-    if (pageCursor) params.set("cursor", pageCursor);
-    if (filterMode === "connected") params.set("filter", "connected");
-    const trimmedSearch = searchTerm?.trim();
-    if (trimmedSearch) params.set("search", trimmedSearch);
-
-    const url = params.size ? `/api/apps?${params.toString()}` : "/api/apps";
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      setLoading(false);
-      setLoadingMore(false);
-      return;
-    }
-
-    const data = (await res.json()) as {
-      items: Toolkit[];
-      nextCursor?: string | null;
-    };
-
-    setApps((current) => {
-      if (!append) return data.items;
-
-      const merged = new Map(current.map((app) => [app.slug, app]));
-      for (const item of data.items) merged.set(item.slug, item);
-      return Array.from(merged.values());
-    });
-    setCursor(data.nextCursor ?? null);
-    setLoading(false);
-    setLoadingMore(false);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-
-    const loadApps = async () => {
-      try {
-        if (!cancelled) {
-          setLoading(true);
-          setCursor(null);
-        }
-
-        const params = new URLSearchParams();
-        if (filter === "connected") params.set("filter", "connected");
-        const trimmedSearch = deferredSearch.trim();
-        if (trimmedSearch) params.set("search", trimmedSearch);
-
-        const url = params.size ? `/api/apps?${params.toString()}` : "/api/apps";
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-
-        const data = (await res.json()) as {
-          items: Toolkit[];
-          nextCursor?: string | null;
-        };
-
-        if (!cancelled) {
-          setApps(data.items);
-          setCursor(data.nextCursor ?? null);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (
-          !cancelled &&
-          !(error instanceof DOMException && error.name === "AbortError")
-        ) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadApps();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [deferredSearch, filter]);
+  const apps = Array.from(
+    new Map(
+      (appsQuery.data?.pages ?? [])
+        .flatMap((page) => page.items)
+        .map((app) => [app.slug, app]),
+    ).values(),
+  );
+  const loading = appsQuery.isLoading;
+  const hasNextPage = appsQuery.hasNextPage ?? false;
+  const loadingMore = appsQuery.isFetchingNextPage;
 
   const handleConnect = async (slug: string) => {
     setPending(slug);
@@ -157,19 +116,13 @@ export default function AppsPage() {
   const handleDisconnect = async (slug: string) => {
     setPending(slug);
     await fetch(`/api/apps/${slug}`, { method: "DELETE" });
-    await fetchApps({ filterMode: filter, searchTerm: deferredSearch });
+    await queryClient.invalidateQueries({ queryKey: ["apps"] });
     setPending(null);
   };
 
   const handleLoadMore = async () => {
-    if (!cursor || loadingMore) return;
-    setLoadingMore(true);
-    await fetchApps({
-      append: true,
-      cursor,
-      filterMode: filter,
-      searchTerm: deferredSearch,
-    });
+    if (!hasNextPage || loadingMore) return;
+    await appsQuery.fetchNextPage();
   };
 
   return (
@@ -234,7 +187,7 @@ export default function AppsPage() {
           </div>
         ) : null}
 
-        {!loading && cursor ? (
+        {!loading && hasNextPage ? (
           <div className="mt-6 flex justify-center">
             <Button
               variant="outline"
