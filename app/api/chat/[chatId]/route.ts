@@ -7,6 +7,7 @@ import { composio } from "@/lib/composio";
 import { filterComposioTools } from "@/lib/composio-tools";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
+import { CRONOS_SYSTEM_PROMPT } from "@/lib/system-prompt";
 import {
   convertToModelMessages,
   jsonSchema,
@@ -283,6 +284,7 @@ export async function POST(
 
   const result = streamText({
     model: cloudflareCompat(CLOUDFLARE_COMPAT_MODEL),
+    system: CRONOS_SYSTEM_PROMPT,
     messages: await convertToModelMessages(messages),
     stopWhen: stepCountIs(50),
     tools: { ...composioTools, ...builtInTools },

@@ -37,7 +37,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 rounded-xl border border-border bg-card p-8">
         <div className="space-y-1 text-center">
-          <h1 className="font-pixel text-xl tracking-widest">My AI App</h1>
+          <h1 className="font-pixel text-xl tracking-widest">Cronos</h1>
           <p className="text-sm text-muted-foreground">
             {mode === "signin" ? "Sign in to your account" : "Create an account"}
           </p>

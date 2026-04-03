@@ -6,6 +6,7 @@ import { composio } from "@/lib/composio";
 import { filterComposioTools } from "@/lib/composio-tools";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
+import { CRONOS_SYSTEM_PROMPT } from "@/lib/system-prompt";
 import {
   convertToModelMessages,
   generateText,
@@ -113,6 +114,7 @@ export const { POST } = serve(async (context) => {
 
     const { text } = await generateText({
       model: cloudflareCompat(CLOUDFLARE_COMPAT_MODEL),
+      system: CRONOS_SYSTEM_PROMPT,
       messages: await convertToModelMessages(scheduledMessages),
       tools: composioTools,
       stopWhen: stepCountIs(10),

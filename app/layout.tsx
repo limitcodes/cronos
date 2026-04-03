@@ -7,8 +7,8 @@ import { GeistPixelSquare } from "geist/font/pixel";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "My AI App",
-  description: "A Next.js chatbot built with AI SDK and AI Elements.",
+  title: "Cronos",
+  description: "Cronos is an app-connected AI assistant for planning and action.",
 };
 
 export default function RootLayout({

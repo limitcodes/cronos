@@ -86,7 +86,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <span className="font-pixel text-sm tracking-widest text-foreground">My AI App</span>
+        <span className="font-pixel text-sm tracking-widest text-foreground">Cronos</span>
         <Button size="sm" className="mt-3 w-full gap-2" onClick={handleNewChat}>
           <PlusIcon className="size-4" />
           New Chat

@@ -3,7 +3,7 @@
 import { Fragment, use, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, isToolUIPart } from "ai";
 import {
   Conversation,
   ConversationContent,
@@ -14,6 +14,12 @@ import {
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message";
+import {
+  Reasoning,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
+import { Shimmer } from "@/components/ai-elements/shimmer";
+import { BrainIcon, WrenchIcon } from "lucide-react";
 import {
   PromptInput,
   PromptInputFooter,
@@ -36,6 +42,27 @@ export default function ChatPage({
     id: chatId,
     transport: new DefaultChatTransport({ api: `/api/chat/${chatId}` }),
   });
+  const lastAssistantMessage = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant");
+  const assistantHasText = Boolean(
+    lastAssistantMessage?.parts.some(
+      (part) => part.type === "text" && part.text.trim().length > 0,
+    ),
+  );
+  const assistantHasToolActivity = Boolean(
+    lastAssistantMessage?.parts.some(
+      (part) =>
+        isToolUIPart(part) &&
+        (part.state === "input-streaming" ||
+          part.state === "input-available" ||
+          part.state === "approval-requested" ||
+          part.state === "approval-responded"),
+    ),
+  );
+  const showThinkingIndicator = status === "submitted";
+  const showToolIndicator =
+    status === "streaming" && assistantHasToolActivity && !assistantHasText;
 
   // Load persisted messages
   useEffect(() => {
@@ -91,6 +118,26 @@ export default function ChatPage({
                 </Message>
               </Fragment>
             ))}
+            {showThinkingIndicator || showToolIndicator ? (
+              <Message from="assistant">
+                <MessageContent className="font-pixel">
+                  <Reasoning className="mb-0" isStreaming>
+                    <ReasoningTrigger className="[&_svg]:hidden">
+                      <>
+                        {showToolIndicator ? (
+                          <WrenchIcon className="size-4" />
+                        ) : (
+                          <BrainIcon className="size-4" />
+                        )}
+                        <Shimmer duration={1}>
+                          {showToolIndicator ? "Calling tools..." : "Thinking..."}
+                        </Shimmer>
+                      </>
+                    </ReasoningTrigger>
+                  </Reasoning>
+                </MessageContent>
+              </Message>
+            ) : null}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
