@@ -4,6 +4,7 @@ import {
   cloudflareCompat,
 } from "@/lib/cloudflare-compat";
 import { composio } from "@/lib/composio";
+import { filterComposioTools } from "@/lib/composio-tools";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
 import {
@@ -171,7 +172,9 @@ export async function POST(
 
   // Build Composio meta-tools for this user
   const composioSession = await composio.create(session.user.id);
-  const rawComposioTools = (await composioSession.tools()) as RawTool[];
+  const rawComposioTools = filterComposioTools(
+    (await composioSession.tools()) as RawTool[],
+  );
   const composioTools = composioMetaToolsToVercel(
     rawComposioTools,
     composioSession.sessionId,

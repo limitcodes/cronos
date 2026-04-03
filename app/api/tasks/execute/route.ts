@@ -3,6 +3,7 @@ import {
   cloudflareCompat,
 } from "@/lib/cloudflare-compat";
 import { composio } from "@/lib/composio";
+import { filterComposioTools } from "@/lib/composio-tools";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
 import {
@@ -75,7 +76,9 @@ export const { POST } = serve(async (context) => {
   // Step 3: Run the agent with the task as hidden runtime context
   const agentResponse = await context.run("run-agent", async () => {
     const composioSession = await composio.create(userId);
-    const rawComposioTools = (await composioSession.tools()) as RawTool[];
+    const rawComposioTools = filterComposioTools(
+      (await composioSession.tools()) as RawTool[],
+    );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const composioTools: Record<string, any> = Object.fromEntries(
