@@ -67,13 +67,13 @@ export function AppSidebar() {
   }, [activeChatId]);
 
   const handleNewChat = () => {
-    router.push("/");
+    router.push("/new");
   };
 
   const handleDelete = async (chatId: string) => {
     await fetch(`/api/chats/${chatId}`, { method: "DELETE" });
     setChats((prev) => prev.filter((c) => c.id !== chatId));
-    if (activeChatId === chatId) router.push("/");
+    if (activeChatId === chatId) router.push("/new");
   };
 
   const initials = session?.user?.name
@@ -165,7 +165,7 @@ export function AppSidebar() {
             variant="ghost"
             className="ml-auto shrink-0 text-xs"
             onClick={() =>
-              authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/login") } })
+              authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } })
             }
           >
             Sign out

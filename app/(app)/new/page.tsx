@@ -10,7 +10,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 
-export default function HomePage() {
+export default function NewChatPage() {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,6 @@ export default function HomePage() {
     });
     if (res.ok) {
       const chat = await res.json();
-      // Pass the initial message via query param so the chat page sends it
       router.push(`/chat/${chat.id}?q=${encodeURIComponent(message.text)}`);
     } else {
       setLoading(false);

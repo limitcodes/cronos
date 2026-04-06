@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (error) { setError(error.message ?? "Sign in failed"); setLoading(false); return; }
     }
 
-    router.push("/");
+    router.push("/new");
     router.refresh();
   };
 

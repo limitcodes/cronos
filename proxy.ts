@@ -4,13 +4,14 @@ import { auth } from "@/lib/auth";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = await auth.api.getSession({ headers: request.headers });
+  const publicPaths = new Set(["/", "/login"]);
 
-  if (!session && pathname !== "/login") {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (!session && !publicPaths.has(pathname)) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  if (session && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+  if (session && (pathname === "/" || pathname === "/login")) {
+    return NextResponse.redirect(new URL("/new", request.url));
   }
 
   return NextResponse.next();
