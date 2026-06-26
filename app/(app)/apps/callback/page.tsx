@@ -35,7 +35,9 @@ function CallbackPageContent() {
           <>
             <CheckCircle2Icon className="size-12 text-emerald-500" />
             <p className="text-lg font-medium">
-              {toolkit ? `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} connected!` : "Connected!"}
+              {toolkit
+                ? `${toolkit.charAt(0).toUpperCase() + toolkit.slice(1)} connected!`
+                : "Connected!"}
             </p>
             <p className="text-sm text-muted-foreground">Redirecting back to apps…</p>
           </>
@@ -43,9 +45,7 @@ function CallbackPageContent() {
           <>
             <XCircleIcon className="size-12 text-destructive" />
             <p className="text-lg font-medium">Connection failed</p>
-            <p className="text-sm text-muted-foreground">
-              Something went wrong. Please try again.
-            </p>
+            <p className="text-sm text-muted-foreground">Something went wrong. Please try again.</p>
             <Button size="sm" onClick={() => router.push("/apps")}>
               Back to Apps
             </Button>

@@ -5,14 +5,7 @@ import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
 import { OPENROUTER_MODEL, openrouter } from "@/lib/openrouter";
 import { CRONOS_SYSTEM_PROMPT } from "@/lib/system-prompt";
-import {
-  convertToModelMessages,
-  jsonSchema,
-  stepCountIs,
-  streamText,
-  tool,
-  UIMessage,
-} from "ai";
+import { convertToModelMessages, jsonSchema, stepCountIs, streamText, tool, UIMessage } from "ai";
 import { Client } from "@upstash/workflow";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -40,11 +33,7 @@ function getQStashToken() {
   return token;
 }
 
-function getScheduleMode(args: {
-  delay_seconds?: number;
-  scheduled_time?: string;
-  cron?: string;
-}) {
+function getScheduleMode(args: { delay_seconds?: number; scheduled_time?: string; cron?: string }) {
   const providedModes = [
     args.delay_seconds != null ? "delay_seconds" : null,
     args.scheduled_time ? "scheduled_time" : null,
@@ -80,9 +69,7 @@ async function createRecurringSchedule({
         "Content-Type": "application/json",
         "Upstash-Cron": cron,
         ...(timezone ? { "Upstash-Cron-Timezone": timezone } : {}),
-        ...(typeof retries === "number"
-          ? { "Upstash-Retries": String(retries) }
-          : {}),
+        ...(typeof retries === "number" ? { "Upstash-Retries": String(retries) } : {}),
       },
       body: JSON.stringify(body),
     },
@@ -108,13 +95,11 @@ function composioMetaToolsToVercel(
         t.function.name,
         tool({
           description: t.function.description ?? t.function.name,
-          inputSchema: jsonSchema(
-            t.function.parameters as Parameters<typeof jsonSchema>[0],
-          ),
+          inputSchema: jsonSchema(t.function.parameters as Parameters<typeof jsonSchema>[0]),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           execute: async (args: any) => {
             try {
-              return await composio.tools.executeMetaTool(t.function.name, {
+              return await composio.tools.executeSessionTool(t.function.name, {
                 sessionId,
                 arguments: args,
               });
@@ -127,10 +112,7 @@ function composioMetaToolsToVercel(
   );
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> },
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
@@ -170,13 +152,8 @@ export async function POST(
 
   // Build Composio meta-tools for this user
   const composioSession = await composio.create(session.user.id);
-  const rawComposioTools = filterComposioTools(
-    (await composioSession.tools()) as RawTool[],
-  );
-  const composioTools = composioMetaToolsToVercel(
-    rawComposioTools,
-    composioSession.sessionId,
-  );
+  const rawComposioTools = filterComposioTools((await composioSession.tools()) as RawTool[]);
+  const composioTools = composioMetaToolsToVercel(rawComposioTools, composioSession.sessionId);
 
   // Built-in schedule_task tool
   const workflowClient = new Client({ token: getQStashToken() });
@@ -248,11 +225,7 @@ export async function POST(
             mode === "scheduled_time"
               ? Math.max(
                   0,
-                  Math.floor(
-                    (new Date(String(args.scheduled_time)).getTime() -
-                      Date.now()) /
-                      1000,
-                  ),
+                  Math.floor((new Date(String(args.scheduled_time)).getTime() - Date.now()) / 1000),
                 )
               : (args.delay_seconds ?? 60);
 
@@ -286,15 +259,11 @@ export async function POST(
     stopWhen: stepCountIs(50),
     tools: { ...composioTools, ...builtInTools },
     onFinish: async ({ response }) => {
-      for (const msg of response.messages.filter(
-        (m) => m.role === "assistant",
-      )) {
+      for (const msg of response.messages.filter((m) => m.role === "assistant")) {
         const content = msg.content;
         const text = Array.isArray(content)
           ? content
-              .filter(
-                (p): p is { type: "text"; text: string } => p.type === "text",
-              )
+              .filter((p): p is { type: "text"; text: string } => p.type === "text")
               .map((p) => p.text)
               .join("")
           : String(content);
@@ -305,10 +274,7 @@ export async function POST(
             .values({ id: nanoid(), chatId, role: "assistant", content: text });
         }
       }
-      await db
-        .update(chat)
-        .set({ updatedAt: new Date() })
-        .where(eq(chat.id, chatId));
+      await db.update(chat).set({ updatedAt: new Date() }).where(eq(chat.id, chatId));
     },
   });
 

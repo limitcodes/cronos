@@ -58,7 +58,9 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <section className={`${styles.shell} grid gap-12 px-6 pb-18 pt-16 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-24`}>
+      <section
+        className={`${styles.shell} grid gap-12 px-6 pb-18 pt-16 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-24`}
+      >
         <div>
           <p className={`${styles.eyebrow} ${mono.className}`}>App-connected AI assistant</p>
           <h1 className="mt-4 max-w-4xl text-[3.5rem] leading-[0.95] tracking-[-0.08em] md:text-[5rem] lg:text-[6rem]">
@@ -66,7 +68,9 @@ export default function LandingPage() {
             <br />
             It handles the next step.
           </h1>
-          <p className={`${serif.className} mt-6 max-w-lg text-[1.18rem] leading-[1.6] text-[rgba(230,229,224,0.62)] md:text-[1.28rem]`}>
+          <p
+            className={`${serif.className} mt-6 max-w-lg text-[1.18rem] leading-[1.6] text-[rgba(230,229,224,0.62)] md:text-[1.28rem]`}
+          >
             Chat, connected app actions, and scheduled follow-through in the same thread.
           </p>
 
@@ -78,7 +82,9 @@ export default function LandingPage() {
               Start using Cronos
               <ArrowRightIcon className="size-4" />
             </Link>
-            <p className={`${mono.className} text-xs uppercase tracking-[0.18em] text-[rgba(230,229,224,0.38)]`}>
+            <p
+              className={`${mono.className} text-xs uppercase tracking-[0.18em] text-[rgba(230,229,224,0.38)]`}
+            >
               Chat history + app actions + scheduled tasks
             </p>
           </div>
@@ -95,10 +101,14 @@ export default function LandingPage() {
 
             <div className="space-y-4">
               <div>
-                <div className={`${mono.className} text-[11px] uppercase tracking-[0.18em] text-[rgba(236,232,223,0.45)]`}>
+                <div
+                  className={`${mono.className} text-[11px] uppercase tracking-[0.18em] text-[rgba(236,232,223,0.45)]`}
+                >
                   Request
                 </div>
-                <p className={`${serif.className} mt-2 text-[1rem] leading-7 text-[rgba(236,232,223,0.92)]`}>
+                <p
+                  className={`${serif.className} mt-2 text-[1rem] leading-7 text-[rgba(236,232,223,0.92)]`}
+                >
                   &ldquo;Send the update today. If nobody replies, remind me tomorrow at 9.&rdquo;
                 </p>
               </div>
@@ -133,21 +143,28 @@ export default function LandingPage() {
             <h2 className="text-[2.35rem] leading-[1.02] tracking-[-0.05em] md:text-[3rem]">
               Fewer promises. Clearer product.
             </h2>
-            <p className={`${serif.className} mt-4 text-[1.12rem] leading-8 text-[rgba(230,229,224,0.62)]`}>
-              Cronos is a practical assistant: conversation first, app execution when authorized, and scheduled follow-through when the task belongs later.
+            <p
+              className={`${serif.className} mt-4 text-[1.12rem] leading-8 text-[rgba(230,229,224,0.62)]`}
+            >
+              Cronos is a practical assistant: conversation first, app execution when authorized,
+              and scheduled follow-through when the task belongs later.
             </p>
           </div>
 
           <div className={`${styles.steps} mt-12`}>
             {steps.map((step, index) => (
               <div key={step.title} className={styles.step}>
-                <div className={`${mono.className} text-[11px] uppercase tracking-[0.18em] text-[rgba(230,229,224,0.38)]`}>
+                <div
+                  className={`${mono.className} text-[11px] uppercase tracking-[0.18em] text-[rgba(230,229,224,0.38)]`}
+                >
                   0{index + 1}
                 </div>
                 <h3 className="mt-3 text-[1.7rem] leading-[1.05] tracking-[-0.04em]">
                   {step.title}
                 </h3>
-                <p className={`${serif.className} mt-3 max-w-sm text-[1.04rem] leading-7 text-[rgba(230,229,224,0.62)]`}>
+                <p
+                  className={`${serif.className} mt-3 max-w-sm text-[1.04rem] leading-7 text-[rgba(230,229,224,0.62)]`}
+                >
                   {step.body}
                 </p>
               </div>
@@ -162,7 +179,9 @@ export default function LandingPage() {
             <h2 className="text-[2.2rem] leading-[1.02] tracking-[-0.05em] md:text-[2.8rem]">
               Built for work that should actually get done.
             </h2>
-            <p className={`${serif.className} max-w-2xl text-[1.12rem] leading-8 text-[rgba(230,229,224,0.62)]`}>
+            <p
+              className={`${serif.className} max-w-2xl text-[1.12rem] leading-8 text-[rgba(230,229,224,0.62)]`}
+            >
               Open a chat, connect the apps you need, and let Cronos carry the thread forward.
             </p>
             <div className="flex flex-wrap items-center gap-4">

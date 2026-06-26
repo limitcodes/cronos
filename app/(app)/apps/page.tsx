@@ -1,19 +1,11 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
-import {
-  useInfiniteQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  CheckCircle2Icon,
-  CircleIcon,
-  ExternalLinkIcon,
-  SearchIcon,
-} from "lucide-react";
+import { CheckCircle2Icon, CircleIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
 
 interface Toolkit {
   slug: string;
@@ -93,9 +85,7 @@ export default function AppsPage() {
 
   const apps = Array.from(
     new Map(
-      (appsQuery.data?.pages ?? [])
-        .flatMap((page) => page.items)
-        .map((app) => [app.slug, app]),
+      (appsQuery.data?.pages ?? []).flatMap((page) => page.items).map((app) => [app.slug, app]),
     ).values(),
   );
   const loading = appsQuery.isLoading;
@@ -166,9 +156,7 @@ export default function AppsPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           {loading
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <AppCardSkeleton key={i} />
-              ))
+            ? Array.from({ length: 8 }).map((_, i) => <AppCardSkeleton key={i} />)
             : apps.map((app) => (
                 <AppCard
                   key={app.slug}
@@ -189,11 +177,7 @@ export default function AppsPage() {
 
         {!loading && hasNextPage ? (
           <div className="mt-6 flex justify-center">
-            <Button
-              variant="outline"
-              disabled={loadingMore}
-              onClick={handleLoadMore}
-            >
+            <Button variant="outline" disabled={loadingMore} onClick={handleLoadMore}>
               {loadingMore ? "Loading…" : "Load more"}
             </Button>
           </div>
@@ -224,11 +208,7 @@ function AppCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={app.logo}
-            alt={app.name}
-            className="size-10 rounded-lg object-contain"
-          />
+          <img src={app.logo} alt={app.name} className="size-10 rounded-lg object-contain" />
           <div>
             <p className="font-medium leading-tight">{app.name}</p>
             <div className="mt-0.5 flex items-center gap-1.5">

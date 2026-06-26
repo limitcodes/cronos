@@ -9,15 +9,8 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
-import {
-  Reasoning,
-  ReasoningTrigger,
-} from "@/components/ai-elements/reasoning";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { BrainIcon, WrenchIcon } from "lucide-react";
 import {
@@ -28,11 +21,7 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 
-export default function ChatPage({
-  params,
-}: {
-  params: Promise<{ chatId: string }>;
-}) {
+export default function ChatPage({ params }: { params: Promise<{ chatId: string }> }) {
   const { chatId } = use(params);
   const searchParams = useSearchParams();
   const [input, setInput] = useState("");
@@ -46,9 +35,7 @@ export default function ChatPage({
     .reverse()
     .find((message) => message.role === "assistant");
   const assistantHasText = Boolean(
-    lastAssistantMessage?.parts.some(
-      (part) => part.type === "text" && part.text.trim().length > 0,
-    ),
+    lastAssistantMessage?.parts.some((part) => part.type === "text" && part.text.trim().length > 0),
   );
   const assistantHasToolActivity = Boolean(
     lastAssistantMessage?.parts.some(
@@ -61,8 +48,7 @@ export default function ChatPage({
     ),
   );
   const showThinkingIndicator = status === "submitted";
-  const showToolIndicator =
-    status === "streaming" && assistantHasToolActivity && !assistantHasText;
+  const showToolIndicator = status === "streaming" && assistantHasToolActivity && !assistantHasText;
 
   // Load persisted messages
   useEffect(() => {
@@ -75,7 +61,7 @@ export default function ChatPage({
               id: m.id,
               role: m.role,
               parts: [{ type: "text", text: m.content }],
-            }))
+            })),
           );
         }
       })
@@ -104,59 +90,57 @@ export default function ChatPage({
       <Conversation className="flex-1">
         <ConversationContent className="mx-auto w-full max-w-4xl">
           {messages.map((message) => (
-              <Fragment key={message.id}>
-                <Message from={message.role}>
-                  <MessageContent
-                    className={message.role === "assistant" ? "font-pixel" : ""}
-                  >
-                    {message.parts.map((part, i) =>
-                      part.type === "text" ? (
-                        <MessageResponse key={i}>{part.text}</MessageResponse>
-                      ) : null
-                    )}
-                  </MessageContent>
-                </Message>
-              </Fragment>
-            ))}
-            {showThinkingIndicator || showToolIndicator ? (
-              <Message from="assistant">
-                <MessageContent className="font-pixel">
-                  <Reasoning className="mb-0" isStreaming>
-                    <ReasoningTrigger className="[&_svg]:hidden">
-                      <>
-                        {showToolIndicator ? (
-                          <WrenchIcon className="size-4" />
-                        ) : (
-                          <BrainIcon className="size-4" />
-                        )}
-                        <Shimmer duration={1}>
-                          {showToolIndicator ? "Calling tools..." : "Thinking..."}
-                        </Shimmer>
-                      </>
-                    </ReasoningTrigger>
-                  </Reasoning>
+            <Fragment key={message.id}>
+              <Message from={message.role}>
+                <MessageContent className={message.role === "assistant" ? "font-pixel" : ""}>
+                  {message.parts.map((part, i) =>
+                    part.type === "text" ? (
+                      <MessageResponse key={i}>{part.text}</MessageResponse>
+                    ) : null,
+                  )}
                 </MessageContent>
               </Message>
-            ) : null}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
+            </Fragment>
+          ))}
+          {showThinkingIndicator || showToolIndicator ? (
+            <Message from="assistant">
+              <MessageContent className="font-pixel">
+                <Reasoning className="mb-0" isStreaming>
+                  <ReasoningTrigger className="[&_svg]:hidden">
+                    <>
+                      {showToolIndicator ? (
+                        <WrenchIcon className="size-4" />
+                      ) : (
+                        <BrainIcon className="size-4" />
+                      )}
+                      <Shimmer duration={1}>
+                        {showToolIndicator ? "Calling tools..." : "Thinking..."}
+                      </Shimmer>
+                    </>
+                  </ReasoningTrigger>
+                </Reasoning>
+              </MessageContent>
+            </Message>
+          ) : null}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
-        <div className="flex justify-center p-4">
-          <div className="w-full max-w-2xl">
-            <PromptInput onSubmit={handleSubmit}>
-              <PromptInputTextarea
-                onChange={(e) => setInput(e.currentTarget.value)}
-                placeholder="Type a message..."
-                value={input}
-              />
-              <PromptInputFooter>
-                <div />
-                <PromptInputSubmit onStop={stop} status={status} />
-              </PromptInputFooter>
-            </PromptInput>
-          </div>
+      <div className="flex justify-center p-4">
+        <div className="w-full max-w-2xl">
+          <PromptInput onSubmit={handleSubmit}>
+            <PromptInputTextarea
+              onChange={(e) => setInput(e.currentTarget.value)}
+              placeholder="Type a message..."
+              value={input}
+            />
+            <PromptInputFooter>
+              <div />
+              <PromptInputSubmit onStop={stop} status={status} />
+            </PromptInputFooter>
+          </PromptInput>
         </div>
+      </div>
     </div>
   );
 }

@@ -48,8 +48,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   background:
-    linear-gradient(180deg, rgba(51, 50, 42, 0.88), rgba(31, 30, 24, 0.96)),
-    var(--surface);
+    linear-gradient(180deg, rgba(51, 50, 42, 0.88), rgba(31, 30, 24, 0.96)), var(--surface);
   box-shadow:
     rgba(0, 0, 0, 0.32) 0 28px 70px,
     rgba(230, 229, 224, 0.06) 0 0 0 1px;

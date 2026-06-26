@@ -4,10 +4,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 // POST /api/apps/[toolkit] — initiate OAuth, returns redirectUrl
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ toolkit: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ toolkit: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -23,7 +20,7 @@ export async function POST(
 // DELETE /api/apps/[toolkit] — disconnect
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ toolkit: string }> }
+  { params }: { params: Promise<{ toolkit: string }> },
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

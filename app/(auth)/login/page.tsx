@@ -23,10 +23,18 @@ export default function LoginPage() {
 
     if (mode === "signup") {
       const { error } = await authClient.signUp.email({ name, email, password });
-      if (error) { setError(error.message ?? "Sign up failed"); setLoading(false); return; }
+      if (error) {
+        setError(error.message ?? "Sign up failed");
+        setLoading(false);
+        return;
+      }
     } else {
       const { error } = await authClient.signIn.email({ email, password });
-      if (error) { setError(error.message ?? "Sign in failed"); setLoading(false); return; }
+      if (error) {
+        setError(error.message ?? "Sign in failed");
+        setLoading(false);
+        return;
+      }
     }
 
     router.push("/new");
@@ -47,16 +55,36 @@ export default function LoginPage() {
           {mode === "signup" && (
             <div className="space-y-1.5">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                required
+              />
             </div>
           )}
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

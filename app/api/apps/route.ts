@@ -33,23 +33,19 @@ export async function GET(request: NextRequest) {
   let pageCount = 0;
 
   do {
-    const { items, nextCursor: pageNextCursor } = await composioSession.toolkits({
+    const { items, cursor: pageNextCursor } = await composioSession.toolkits({
       limit: 50,
-      nextCursor,
+      cursor: nextCursor,
       isConnected,
       search,
     });
 
-    toolkits.push(
-      ...items.filter((toolkit) => !PREMIUM_TOOLKIT_SLUGS.has(toolkit.slug)),
-    );
+    toolkits.push(...items.filter((toolkit) => !PREMIUM_TOOLKIT_SLUGS.has(toolkit.slug)));
     nextCursor = pageNextCursor ?? undefined;
     pageCount += 1;
   } while (nextCursor && toolkits.length < MAX_VISIBLE_TOOLKITS && pageCount < 3);
 
-  const items = Array.from(
-    new Map(toolkits.map((toolkit) => [toolkit.slug, toolkit])).values(),
-  )
+  const items = Array.from(new Map(toolkits.map((toolkit) => [toolkit.slug, toolkit])).values())
     .sort((a, b) => {
       const rankDifference = rankToolkit(a, search) - rankToolkit(b, search);
       if (rankDifference !== 0) return rankDifference;

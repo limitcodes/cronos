@@ -17,11 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +26,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronRightIcon, MessageSquareIcon, MoreHorizontalIcon, PlugZapIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  MessageSquareIcon,
+  MoreHorizontalIcon,
+  PlugZapIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 interface Chat {
   id: string;
@@ -76,12 +79,13 @@ export function AppSidebar() {
     if (activeChatId === chatId) router.push("/new");
   };
 
-  const initials = session?.user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) ?? "";
+  const initials =
+    session?.user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) ?? "";
 
   return (
     <Sidebar>
@@ -107,45 +111,47 @@ export function AppSidebar() {
 
         <Collapsible defaultOpen className="group/collapsible">
           <SidebarGroup>
-            <SidebarGroupLabel render={<CollapsibleTrigger className="flex w-full items-center justify-between" />}>
+            <SidebarGroupLabel
+              render={<CollapsibleTrigger className="flex w-full items-center justify-between" />}
+            >
               Your Chats
               <ChevronRightIcon className="size-3.5 transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
             </SidebarGroupLabel>
             <CollapsibleContent>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {chats.length === 0 && (
-                <p className="px-3 py-2 text-xs text-muted-foreground">No chats yet</p>
-              )}
-              {chats.map((chat) => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton
-                    render={<Link href={`/chat/${chat.id}`} />}
-                    isActive={chat.id === activeChatId}
-                    tooltip={chat.title}
-                    className="flex items-center gap-2"
-                  >
-                    <MessageSquareIcon className="size-4 shrink-0" />
-                    <span className="truncate">{chat.title}</span>
-                  </SidebarMenuButton>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
-                      <MoreHorizontalIcon className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent side="right" align="start">
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleDelete(chat.id)}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {chats.length === 0 && (
+                    <p className="px-3 py-2 text-xs text-muted-foreground">No chats yet</p>
+                  )}
+                  {chats.map((chat) => (
+                    <SidebarMenuItem key={chat.id}>
+                      <SidebarMenuButton
+                        render={<Link href={`/chat/${chat.id}`} />}
+                        isActive={chat.id === activeChatId}
+                        tooltip={chat.title}
+                        className="flex items-center gap-2"
                       >
-                        <Trash2Icon className="mr-2 size-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
+                        <MessageSquareIcon className="size-4 shrink-0" />
+                        <span className="truncate">{chat.title}</span>
+                      </SidebarMenuButton>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+                          <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDelete(chat.id)}
+                          >
+                            <Trash2Icon className="mr-2 size-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
         </Collapsible>

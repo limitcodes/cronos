@@ -11,9 +11,7 @@ export const metadata: Metadata = {
   description: "Cronos is an app-connected AI assistant for planning and action.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"

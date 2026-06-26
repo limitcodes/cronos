@@ -5,10 +5,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -32,16 +29,14 @@ export async function GET(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
+  { params }: { params: Promise<{ chatId: string }> },
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { chatId } = await params;
 
-  await db
-    .delete(chat)
-    .where(and(eq(chat.id, chatId), eq(chat.userId, session.user.id)));
+  await db.delete(chat).where(and(eq(chat.id, chatId), eq(chat.userId, session.user.id)));
 
   return NextResponse.json({ success: true });
 }

@@ -4,14 +4,7 @@ import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
 import { OPENROUTER_MODEL, openrouter } from "@/lib/openrouter";
 import { CRONOS_SYSTEM_PROMPT } from "@/lib/system-prompt";
-import {
-  convertToModelMessages,
-  generateText,
-  jsonSchema,
-  stepCountIs,
-  tool,
-  UIMessage,
-} from "ai";
+import { convertToModelMessages, generateText, jsonSchema, stepCountIs, tool, UIMessage } from "ai";
 import { asc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { serve } from "@upstash/workflow/nextjs";
@@ -74,9 +67,7 @@ export const { POST } = serve(async (context) => {
   // Step 3: Run the agent with the task as hidden runtime context
   const agentResponse = await context.run("run-agent", async () => {
     const composioSession = await composio.create(userId);
-    const rawComposioTools = filterComposioTools(
-      (await composioSession.tools()) as RawTool[],
-    );
+    const rawComposioTools = filterComposioTools((await composioSession.tools()) as RawTool[]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const composioTools: Record<string, any> = Object.fromEntries(
@@ -86,13 +77,11 @@ export const { POST } = serve(async (context) => {
           t.function.name,
           tool({
             description: t.function.description ?? t.function.name,
-            inputSchema: jsonSchema(
-              t.function.parameters as Parameters<typeof jsonSchema>[0],
-            ),
+            inputSchema: jsonSchema(t.function.parameters as Parameters<typeof jsonSchema>[0]),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             execute: async (args: any) => {
               try {
-                return await composio.tools.executeMetaTool(t.function.name, {
+                return await composio.tools.executeSessionTool(t.function.name, {
                   sessionId: composioSession.sessionId,
                   arguments: args,
                 });
@@ -130,9 +119,6 @@ export const { POST } = serve(async (context) => {
         content: agentResponse,
       });
     }
-    await db
-      .update(chat)
-      .set({ updatedAt: new Date() })
-      .where(eq(chat.id, chatId));
+    await db.update(chat).set({ updatedAt: new Date() }).where(eq(chat.id, chatId));
   });
 });

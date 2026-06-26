@@ -11,7 +11,6 @@ type RawTool = {
 
 export function filterComposioTools<T extends RawTool>(tools: T[]) {
   return tools.filter(
-    (tool) =>
-      tool.function.name && !HIDDEN_COMPOSIO_META_TOOLS.has(tool.function.name),
+    (tool) => tool.function.name && !HIDDEN_COMPOSIO_META_TOOLS.has(tool.function.name),
   );
 }
