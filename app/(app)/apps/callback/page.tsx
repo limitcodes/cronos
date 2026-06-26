@@ -1,11 +1,19 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function CallbackPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center" />}>
+      <CallbackPageContent />
+    </Suspense>
+  );
+}
+
+function CallbackPageContent() {
   const params = useSearchParams();
   const router = useRouter();
 

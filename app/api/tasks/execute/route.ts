@@ -1,11 +1,8 @@
-import {
-  CLOUDFLARE_COMPAT_MODEL,
-  cloudflareCompat,
-} from "@/lib/cloudflare-compat";
 import { composio } from "@/lib/composio";
 import { filterComposioTools } from "@/lib/composio-tools";
 import { db } from "@/lib/db";
 import { chat, message } from "@/lib/db/schema";
+import { OPENROUTER_MODEL, openrouter } from "@/lib/openrouter";
 import { CRONOS_SYSTEM_PROMPT } from "@/lib/system-prompt";
 import {
   convertToModelMessages,
@@ -113,7 +110,7 @@ export const { POST } = serve(async (context) => {
     ] as UIMessage[];
 
     const { text } = await generateText({
-      model: cloudflareCompat(CLOUDFLARE_COMPAT_MODEL),
+      model: openrouter.chat(OPENROUTER_MODEL),
       system: CRONOS_SYSTEM_PROMPT,
       messages: await convertToModelMessages(scheduledMessages),
       tools: composioTools,
